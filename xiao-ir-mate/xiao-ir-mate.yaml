@@ -56,8 +56,8 @@ remote_receiver:
     pin:
       number: GPIO4
       inverted: true
-    #IR lisstening and sending it as a HA Event that can b configured as an automation trigger
-    dump: nec # Optimized to focus on NEC protocol
+    # IR lisstening and sending it as a HA Event that can be configured as an automation trigger
+    dump: nec  # Optimized to focus on NEC protocol
     on_nec:
       then:
         - homeassistant.event:
@@ -67,7 +67,7 @@ remote_receiver:
               address: !lambda 'return str_snprintf("%04X", 4, x.address);'
               command: !lambda 'return str_snprintf("%04X", 4, x.command);'
               full_code: !lambda 'return str_snprintf("Addr: 0x%04X, Cmd: 0x%04X", 25, x.address, x.command);'
-              
+
 infrared:
   # IR transmitter instance
   - platform: ir_rf_proxy
@@ -79,5 +79,4 @@ infrared:
     name: IR Proxy Receiver
     id: ir_proxy_rx
     remote_receiver_id: ir_rx
-
 
