@@ -80,3 +80,27 @@ infrared:
     id: ir_proxy_rx
     remote_receiver_id: ir_rx
 
+esp32_ble_tracker:
+  id: ir_mate_ble_tracker
+
+bluetooth_proxy:
+  id: ir_mate_bt_proxy
+  active: true
+
+select:
+  - platform: template
+    name: Bluetooth Scanner Mode
+    id: scanner_mode
+    options:
+      - "Passive"
+      - "Active"
+    lambda: |-
+      if (id(ir_mate_ble_tracker).get_scan_active()) {
+        return {"Active"};
+      } else {
+        return {"Passive"};
+      }
+    set_action:
+      - lambda: |-
+          id(ir_mate_bt_proxy).bluetooth_scanner_set_mode(x == "Active");
+      - component.update: scanner_mode
