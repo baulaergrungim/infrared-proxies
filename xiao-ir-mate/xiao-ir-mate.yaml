@@ -74,6 +74,16 @@ api:
                   command: !lambda 'return (uint32_t)strtoul(command.c_str(), nullptr, 16);'
         - if:
             condition:
+              lambda: 'return protocol == "Pioneer";'
+            then:
+              - repeat:
+                  count: 3
+                  then:
+                    - remote_transmitter.transmit_pioneer:
+                        rc_code_1: !lambda 'return (uint16_t)strtoul(command.c_str(), nullptr, 16);'
+                    - delay: 40ms
+        - if:
+            condition:
               lambda: 'return protocol == "JVC";'
             then:
               - remote_transmitter.transmit_jvc:
@@ -154,6 +164,13 @@ remote_receiver:
         - homeassistant.event:
             event: esphome.ir_code_received
             data: { protocol: "Samsung", data: !lambda 'return str_snprintf("%08X", 8, x.data);' }
+    on_pioneer:
+      then:
+        - homeassistant.event:
+            event: esphome.ir_code_received
+            data: 
+              protocol: "Pioneer"
+              data: !lambda 'return str_snprintf("%08X", 8, x.rc_code_1);'
     on_jvc:
       then:
         - homeassistant.event:
