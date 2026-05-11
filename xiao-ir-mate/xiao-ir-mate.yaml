@@ -17,7 +17,73 @@ logger:
 api:
   id: api_id
   encryption:   # Uses key set by Home Assistant
-
+    actions:
+    - action: send_ir_signal
+      variables:
+        protocol: string
+        command: string # Used for NEC, Panasonic, LG, Sony, Samsung, JVC
+        # Ideally the two following variables should be optional
+        address: string
+        nbits: int
+      then:
+        - if:
+            condition:
+              lambda: 'return protocol == "NEC";'
+            then:
+              - remote_transmitter.transmit_nec:
+                  # Use a default address if none is provided
+                  address: !lambda |-
+                    if (address.empty()) return 0x7F80; 
+                    return (uint16_t)strtoul(address.c_str(), nullptr, 16);
+                  command: !lambda 'return (uint32_t)strtoul(command.c_str(), nullptr, 16);'
+        - if:
+            condition:
+              lambda: 'return protocol == "LG";'
+            then:
+              - remote_transmitter.transmit_lg:
+                  data: !lambda 'return (uint32_t)strtoul(command.c_str(), nullptr, 16);'
+                  # Use 32 bits as a safe LG default if nbits is 0, other alternative is 28
+                  nbits: !lambda 'return nbits == 0 ? 32 : nbits;'
+        - if:
+            condition:
+              lambda: 'return protocol == "Sony";'
+            then:
+              - repeat:
+                  count: 3 # Sony TVs require repeats
+                  then:
+                    - remote_transmitter.transmit_sony:
+                        data: !lambda 'return (uint32_t)strtoul(command.c_str(), nullptr, 16);'
+                        # Use 12 bits as a safe Sony default if nbits is 0
+                        nbits: !lambda 'return nbits == 0 ? 12 : nbits;'
+                    - delay: 45ms
+        - if:
+            condition:
+              lambda: 'return protocol == "Samsung";'
+            then:
+              - remote_transmitter.transmit_samsung:
+                  data: !lambda 'return (uint32_t)strtoul(command.c_str(), NULL, 16);'
+        - if:
+            condition:
+              lambda: 'return protocol == "Panasonic";'
+            then:
+              - remote_transmitter.transmit_panasonic:
+                  address: !lambda |-
+                    // If address is empty, default to 0x4004 (most common Panasonic addr)
+                    if (address.empty()) return 0x4004; 
+                    return (uint16_t)strtoul(address.c_str(), nullptr, 16);
+                  command: !lambda 'return (uint32_t)strtoul(command.c_str(), nullptr, 16);'
+        - if:
+            condition:
+              lambda: 'return protocol == "JVC";'
+            then:
+              - remote_transmitter.transmit_jvc:
+                  data: !lambda 'return (uint32_t)strtoul(command.c_str(), NULL, 16);'
+        - if:
+            condition:
+              lambda: 'return protocol == "Pronto";'
+            then:
+              - remote_transmitter.transmit_pronto:
+                  data: !lambda 'return command;'
 ota:
   - platform: esphome
     id: ota_esphome
