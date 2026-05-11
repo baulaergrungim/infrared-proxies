@@ -56,8 +56,7 @@ remote_receiver:
     pin:
       number: GPIO4
       inverted: true
-    # IR lisstening and sending it as a HA Event that can be configured as an automation trigger
-    dump: nec  # Optimized to focus on NEC protocol
+    dump: all #we're not filtering out any protocols, IR Mate can handle it
     on_nec:
       then:
         - homeassistant.event:
@@ -66,7 +65,54 @@ remote_receiver:
               protocol: "NEC"
               address: !lambda 'return str_snprintf("%04X", 4, x.address);'
               command: !lambda 'return str_snprintf("%04X", 4, x.command);'
-              full_code: !lambda 'return str_snprintf("Addr: 0x%04X, Cmd: 0x%04X", 25, x.address, x.command);'
+    on_lg:
+      then:
+        - homeassistant.event:
+            event: esphome.ir_code_received
+            data: {protocol: "LG", data: !lambda 'return x.data;'}
+    on_panasonic:
+      then:
+        - homeassistant.event:
+            event: esphome.ir_code_received
+            data:
+              protocol: "Panasonic"
+              address: !lambda 'return str_snprintf("%04X", 4, x.address);'
+              command: !lambda 'return str_snprintf("%08X", 8, x.command);'
+    on_sony:
+      then:
+        - homeassistant.event:
+            event: esphome.ir_code_received
+            data: { protocol: "Sony", data: !lambda 'return str_snprintf("%08X", 8, x.data);' }
+    on_samsung:
+      then:
+        - homeassistant.event:
+            event: esphome.ir_code_received
+            data: { protocol: "Samsung", data: !lambda 'return str_snprintf("%08X", 8, x.data);' }
+    on_jvc:
+      then:
+        - homeassistant.event:
+            event: esphome.ir_code_received
+            data: { protocol: "JVC", data: !lambda 'return str_snprintf("%04X", 4, x.data);' }
+    on_pronto:
+      then:
+        - homeassistant.event:
+            event: esphome.ir_code_received
+            data:
+              protocol: "Pronto"
+              data: !lambda 'return x.data.c_str();'
+# The codes can be listened to in config/developer-tools/event, the data can be used in trigggers as manual even received type: "esphome.ir_code_received"
+# Data will depend on the protocol and code, protocols NEC and Panasonic will need data
+# protocol: 
+# address: 
+# command: 
+#
+# other protocols, including pronot:
+# protocol: 
+# data: 
+#
+# Protocol can be omitted, but defining it in the trigger makes sure no codes overlap.
+# Additionally, some remotes send the same signal a few times, preventing the automation from running more than once can be achieved with a "template" condition:
+# {{ (now() | as_timestamp) - (state_attr('automation.your_automation_name', 'last_triggered') | as_timestamp | default(0)) > 1 }}
 
 infrared:
   # IR transmitter instance
