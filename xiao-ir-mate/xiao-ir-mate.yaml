@@ -17,7 +17,7 @@ logger:
 api:
   id: api_id
   encryption:   # Uses key set by Home Assistant
-    actions:
+  actions:
     - action: send_ir_signal
       variables:
         protocol: string
